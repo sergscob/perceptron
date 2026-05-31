@@ -1,5 +1,5 @@
 import numpy as np
-from activations import sigmoid, sigmoid_derivative, softmax, relu, relu_derivative
+from training.activations import sigmoid, sigmoid_derivative, softmax, relu, relu_derivative
 
 class DenseLayer:
     def __init__(self, input_size, output_size, activation="sigmoid"):
@@ -12,6 +12,19 @@ class DenseLayer:
         self.input = None
         self.z = None
         self.output = None
+
+
+    @classmethod
+    def fromJSON(cls, saved_params):
+        layer = cls(
+            input_size=saved_params["input_size"],
+            output_size=saved_params["output_size"],
+            activation=saved_params["activation"]
+        )
+        layer.W = np.asarray(saved_params["W"])
+        layer.b = np.asarray(saved_params["b"])
+
+        return layer
 
 
     def forward(self, x):
@@ -60,3 +73,15 @@ class DenseLayer:
         self.b -= learning_rate * db
 
         return dInput
+
+    
+    def save(self):
+        return {
+            "type": self.__class__.__name__,
+            "input_size": int(self.W.shape[0]),
+            "output_size": int(self.W.shape[1]),
+            "W": self.W.tolist(),
+            "b": self.b.tolist(),
+            "activation": self.activation
+        }
+    

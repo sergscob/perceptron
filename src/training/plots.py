@@ -16,7 +16,7 @@ def plot_learning_curves(train_losses, val_losses,
     plt.legend()
     plt.grid(True)
 
-    plt.savefig("charts/" + chart_file+ "_loss.png")
+    plt.savefig("result/charts/" + chart_file+ "_loss.png")
     plt.close()    
 
     # =========================
@@ -29,5 +29,5 @@ def plot_learning_curves(train_losses, val_losses,
     plt.legend()
     plt.grid(True)
 
-    plt.savefig("charts/" + chart_file+ "_accuracy.png")
+    plt.savefig("result/charts/" + chart_file+ "_accuracy.png")
     plt.close()

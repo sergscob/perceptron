@@ -11,8 +11,11 @@ venv:
 		"$(PIP)" install -r requirements.txt; \
 	fi
 
+split: venv
+	python3 src/split.py
+
 train: venv
-	python3 src/main.py
+	python3 src/train.py
 
 predict: venv
 	python3 src/predict.py	

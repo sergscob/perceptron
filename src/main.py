@@ -1,34 +1,30 @@
 import argparse
 import sys
-from dateutil import parser
 import pandas as pd
+import numpy as np
 
-from layer import DenseLayer
-from network import Network
-from prepare import normalize 
-from split import split
-from train import train
-from utils import to_hot
+from training.layer import DenseLayer
+from training.network import Network
+from training.normalize import normalize
+from training.train import train
+from training.utils import to_hot
 
+
+def loadCSV(filename: str) -> tuple[np.ndarray, np.ndarray]:
+    try:
+        df = pd.read_csv(filename)
+    except:
+        print(f"Error: Could not load CSV from {filename}")
+        sys.exit(1)
+
+    y = df.iloc[:, 0].astype(int).to_numpy()
+
+    X = df.iloc[:, 1:].to_numpy()
+
+    return X, y
 
 
 def main():
-    try:
-        df = pd.read_csv("data/data.csv", header=None)
-    except:
-        print(f"Error: Could not load CSV from data/data.csv")
-        sys.exit(1)
-
-    y = df[1]
-    y = y.map({ "M": 1, "B": 0 })
-    y = y.to_numpy()
-
-    X = df.iloc[:, 2:]
-    X = X.to_numpy()
-    X_train, X_valid, y_train, y_valid = split(X, y)
-    X_train, X_valid = normalize(X_train, X_valid)
-    # print (X_train.shape[1])
-
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--batch", default=10, help="set the batch size")
     parser.add_argument("-n", "--epochs", default=100, help="set the number of epochs")
@@ -36,7 +32,15 @@ def main():
     parser.add_argument("-r", "--learning_rate", default=0.05, help="set the learning rate")
     parser.add_argument("-v", "--verbose", action="store_true", help="set verbose output")
     parser.add_argument("-l", "--layers", default="24 24 24", help="layers (24 24 24)")
+    parser.add_argument("-s", "--seed", type=int, default=42, help="set random seed")
     args = parser.parse_args()
+
+    np.random.seed(args.seed)
+
+    X_train, y_train = loadCSV("data/train.csv")
+    X_valid, y_valid = loadCSV("data/valid.csv")
+
+    X_train, X_valid = normalize(X_train, X_valid)
 
     if (args.activation not in ["sigmoid", "relu"]):
         print (f"Invalid activation function: {args.activation}.")
@@ -78,14 +82,17 @@ def main():
     print (f"Using learning rate: {args.learning_rate}")
 
     network = Network()
-    network.add(DenseLayer(X_train.shape[1], 16))
-    network.add(DenseLayer(16, 16))
-    network.add(DenseLayer(16, 2, activation="none"))
+    network.add(DenseLayer(X_train.shape[1], layers[0]))
+    for i in range(1, len(layers)):
+        network.add(DenseLayer(layers[i-1], layers[i]))
+    network.add(DenseLayer(layers[-1], 2, activation="none"))
 
     y_train = to_hot(y_train)
     y_valid = to_hot(y_valid)
 
     train(network, X_train, y_train, X_valid, y_valid, args)
+
+    network.save("result/model.json")
 
 
 

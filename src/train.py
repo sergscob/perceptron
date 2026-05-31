@@ -1,139 +1,104 @@
+import argparse
+import sys
+import pandas as pd
 import numpy as np
-from activations import softmax
-from loss import CrossEntropyLoss
-from plots import plot_learning_curves
+
+from training.layer import DenseLayer
+from training.network import Network
+from training.normalize import normalize
+from training.train import train
+from training.utils import to_hot
 
 
-def train(network, X_train, y_train, X_valid, y_valid, args):
+def loadCSV(filename: str) -> tuple[np.ndarray, np.ndarray]:
+    try:
+        df = pd.read_csv(filename)
+    except:
+        print(f"Error: Could not load CSV from {filename}")
+        sys.exit(1)
 
-    learning_rate = float(args.learning_rate)
-    epochs = int(args.epochs) 
-    batch_size = int(args.batch) 
+    y = df.iloc[:, 0].astype(int).to_numpy()
 
-    chart_file = f"{args.activation}_batch_{batch_size}_epochs_{epochs}"
+    X = df.iloc[:, 1:].to_numpy()
 
-    loss_fn = CrossEntropyLoss()
+    return X, y
 
-    train_losses = []
-    val_losses = []
 
-    train_accuracies = []
-    val_accuracies = []
-    num_batches = 0
+def main():
+    X_train, y_train = loadCSV("data/train.csv")
+    X_valid, y_valid = loadCSV("data/valid.csv")
 
-    for epoch in range(epochs):
+    X_train, X_valid = normalize(X_train, X_valid)
+    # print (X_train.shape[1])
 
-        # =========================
-        # SHUFFLE
-        # =========================
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-b", "--batch", default=10, help="set the batch size")
+    parser.add_argument("-n", "--epochs", default=100, help="set the number of epochs")
+    parser.add_argument("-a", "--activation", default="sigmoid", help="set the activation function (sigmoid/relu)")
+    parser.add_argument("-r", "--learning_rate", default=0.05, help="set the learning rate")
+    parser.add_argument("-v", "--verbose", action="store_true", help="set verbose output")
+    parser.add_argument("-l", "--layers", default="24 24 24", help="layers (24 24 24)")
+    args = parser.parse_args()
 
-        indices = np.random.permutation(len(X_train))
+    if (args.activation not in ["sigmoid", "relu"]):
+        print (f"Invalid activation function: {args.activation}.")
+        sys.exit(1)
 
-        X_train = X_train[indices]
-        y_train = y_train[indices]
+    if (int(args.batch) <= 0 or int(args.batch) > len(X_train)):
+        print (f"Invalid batch size: {args.batch}.")
+        sys.exit(1)
 
-        epoch_loss = 0
-        epoch_accuracy = 0
+    if (int(args.epochs) <= 0):
+        print (f"Invalid number of epochs: {args.epochs}.")
+        sys.exit(1)
 
-        # =========================
-        # MINI-BATCH TRAINING
-        # =========================
+    if (float(args.learning_rate) <= 0.00001 or float(args.learning_rate) > 100 or not isinstance(float(args.learning_rate), float)):
+        print (f"Invalid learning rate: {args.learning_rate}. Setting to 0.01.")
+        sys.exit(1)
 
-        for start in range(0, len(X_train), batch_size):
+    words = args.layers.split()
+    layers = []
+    for w in words:
+        try:
+            n = int(w)
+            if n < 2 or n > 100:
+                print (f"Size of layer must be 2-100")
+                sys.exit(1)
+            layers.append(n)
+        except ValueError:
+            print (f"Layers must be array of numbers 2-100")
+            sys.exit(1)
 
-            end = start + batch_size
+    if len(layers) < 2 or len(layers) > 100:
+        print (f"Count of layers must be 2-100")
+        sys.exit(1)
 
-            X_batch = X_train[start:end]
-            y_batch = y_train[start:end]
+    print (f"Using activation function: {args.activation}")
+    print (f"Using layers: {layers}.")
+    print (f"Using batch size: {args.batch}")
+    print (f"Using epochs: {args.epochs}")
+    print (f"Using learning rate: {args.learning_rate}")
 
-            # FORWARD
+    network = Network()
+    network.add(DenseLayer(X_train.shape[1], layers[0]))
+    for i in range(1, len(layers)):
+        network.add(DenseLayer(layers[i-1], layers[i]))
+    network.add(DenseLayer(layers[-1], 2, activation="none"))
 
-            logits = network.forward(X_batch)
+    y_train = to_hot(y_train)
+    y_valid = to_hot(y_valid)
 
-            predictions = softmax(logits)
+    train(network, X_train, y_train, X_valid, y_valid, args)
 
-            # LOSS
+    network.save("result/model.json")
+    print ("Model saved to result/model.json")
 
-            train_loss = loss_fn.forward(y_batch, predictions)
 
-            # BACKPROP
 
-            gradient = predictions - y_batch
 
-            network.backward(gradient, learning_rate)
 
-            # ACCURACY
 
-            pred_classes = np.argmax(predictions, axis=1)
-            true_classes = np.argmax(y_batch, axis=1)
 
-            accuracy = np.mean(pred_classes == true_classes)
 
-            epoch_loss += train_loss
-            epoch_accuracy += accuracy
-
-            num_batches += 1
-
-        # =========================
-        # AVERAGE TRAIN METRICS
-        # =========================
-
-        epoch_loss /= num_batches
-        epoch_accuracy /= num_batches
-
-        # =========================
-        # VALIDATION
-        # =========================
-
-        val_logits = network.forward(X_valid)
-
-        val_predictions = softmax(val_logits)
-
-        val_loss = loss_fn.forward(y_valid, val_predictions)
-
-        val_pred_classes = np.argmax(val_predictions, axis=1)
-        val_true_classes = np.argmax(y_valid, axis=1)
-
-        val_accuracy = np.mean(val_pred_classes == val_true_classes)
-
-        # =========================
-        # SAVE HISTORY
-        # =========================
-
-        train_losses.append(epoch_loss)
-        val_losses.append(val_loss)
-
-        train_accuracies.append(epoch_accuracy)
-        val_accuracies.append(val_accuracy)
-
-        # =========================
-        # PRINT
-        # =========================
-
-        if args.verbose:
-            print(
-                f"epoch {epoch+1}/{epochs} "
-                f"- loss: {epoch_loss:.4f} "
-                f"- accuracy: {epoch_accuracy:.4f} "
-                f"- val_loss: {val_loss:.4f} "
-                f"- val_accuracy: {val_accuracy:.4f}"
-            )
-
-    # =========================
-    # PLOTS
-    # =========================
-
-    plot_learning_curves(
-        train_losses,
-        val_losses,
-        train_accuracies,
-        val_accuracies, 
-        chart_file
-    )
-    print (f"\nTraining complete.")
-    print (f"num_batches: {num_batches}")
-    print (f"Final training loss: {train_losses[-1]:.4f}")
-    print (f"Final training accuracy: {train_accuracies[-1]:.4f}")
-    print (f"Final validation loss: {val_losses[-1]:.4f}")
-    print (f"Final validation accuracy: {val_accuracy:.4f}")
-    print (f"Saved learning curves to charts/{chart_file}_loss.png and charts/{chart_file}_accuracy.png")
+if __name__ == "__main__":
+    main()  

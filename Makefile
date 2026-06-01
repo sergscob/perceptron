@@ -12,10 +12,10 @@ venv:
 	fi
 
 split: venv
-	python3 src/split.py
+	./venv/bin/python3 src/split.py $(ARGS)
 
 train: venv
-	python3 src/train.py
+	./venv/bin/python3 src/train.py $(ARGS)
 
 predict: venv
-	python3 src/predict.py	
+	./venv/bin/python3 src/predict.py $(ARGS)	

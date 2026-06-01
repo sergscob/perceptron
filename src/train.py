@@ -1,44 +1,35 @@
 import argparse
 import sys
-import pandas as pd
+import random
 import numpy as np
 
 from training.layer import DenseLayer
 from training.network import Network
 from training.normalize import normalize
 from training.train import train
-from training.utils import to_hot
-
-
-def loadCSV(filename: str) -> tuple[np.ndarray, np.ndarray]:
-    try:
-        df = pd.read_csv(filename)
-    except:
-        print(f"Error: Could not load CSV from {filename}")
-        sys.exit(1)
-
-    y = df.iloc[:, 0].astype(int).to_numpy()
-
-    X = df.iloc[:, 1:].to_numpy()
-
-    return X, y
-
+from training.utils import to_hot, loadCSV
 
 def main():
-    X_train, y_train = loadCSV("data/train.csv")
-    X_valid, y_valid = loadCSV("data/valid.csv")
-
-    X_train, X_valid = normalize(X_train, X_valid)
-    # print (X_train.shape[1])
-
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--batch", default=10, help="set the batch size")
     parser.add_argument("-n", "--epochs", default=100, help="set the number of epochs")
-    parser.add_argument("-a", "--activation", default="sigmoid", help="set the activation function (sigmoid/relu)")
+    parser.add_argument("-a", "--activation", default="sigmoid", choices=["sigmoid", "relu"], help="set the activation function (sigmoid/relu)")
     parser.add_argument("-r", "--learning_rate", default=0.05, help="set the learning rate")
     parser.add_argument("-v", "--verbose", action="store_true", help="set verbose output")
     parser.add_argument("-l", "--layers", default="24 24 24", help="layers (24 24 24)")
+    parser.add_argument("-w", "--w_init", default="heUniform", choices=["heUniform", "xavierUniform", "heNormal"], help="set the weights initializer")
+    parser.add_argument("-s", "--seed", type=int, default=None, help="set random seed")
     args = parser.parse_args()
+
+    if args.seed is not None:
+        np.random.seed(args.seed)
+        random.seed(args.seed)
+
+    X_train, y_train = loadCSV("data/train.csv")
+    X_valid, y_valid = loadCSV("data/valid.csv")
+
+    X_train, X_valid, mean, std = normalize(X_train, X_valid)
+    # print (X_train.shape[1])
 
     if (args.activation not in ["sigmoid", "relu"]):
         print (f"Invalid activation function: {args.activation}.")
@@ -61,8 +52,8 @@ def main():
     for w in words:
         try:
             n = int(w)
-            if n < 2 or n > 100:
-                print (f"Size of layer must be 2-100")
+            if n < 2 or n > 1000:
+                print (f"Size of layer must be 2-1000")
                 sys.exit(1)
             layers.append(n)
         except ValueError:
@@ -78,26 +69,22 @@ def main():
     print (f"Using batch size: {args.batch}")
     print (f"Using epochs: {args.epochs}")
     print (f"Using learning rate: {args.learning_rate}")
+    print (f"Using weights init: {args.w_init}")
 
     network = Network()
-    network.add(DenseLayer(X_train.shape[1], layers[0]))
+    network.add(DenseLayer(X_train.shape[1], layers[0], w_init=args.w_init))
     for i in range(1, len(layers)):
-        network.add(DenseLayer(layers[i-1], layers[i]))
-    network.add(DenseLayer(layers[-1], 2, activation="none"))
+        network.add(DenseLayer(layers[i-1], layers[i], w_init=args.w_init))
+    network.add(DenseLayer(layers[-1], 2, activation="none", w_init=args.w_init))
 
     y_train = to_hot(y_train)
     y_valid = to_hot(y_valid)
 
     train(network, X_train, y_train, X_valid, y_valid, args)
 
+    network.normalization = {"mean": mean.tolist(), "std": std.tolist()}
     network.save("result/model.json")
     print ("Model saved to result/model.json")
-
-
-
-
-
-
 
 
 if __name__ == "__main__":

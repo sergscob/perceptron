@@ -1,7 +1,7 @@
 import numpy as np
 from training.activations import softmax
-from training.loss import CrossEntropyLoss
-from training.plots import plot_learning_curves
+from training.loss import lossCrossEntropy
+from training.plots import plot_activation_stds, plot_learning_curves
 
 
 def train(network, X_train, y_train, X_valid, y_valid, args):
@@ -9,10 +9,9 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
     learning_rate = float(args.learning_rate)
     epochs = int(args.epochs) 
     batch_size = int(args.batch) 
+    loss_fn = lossCrossEntropy
 
-    chart_file = f"{args.activation}_batch_{batch_size}_epochs_{epochs}"
-
-    loss_fn = CrossEntropyLoss()
+    chart_file = f"{args.activation}_b{batch_size}_e{epochs}_lr{learning_rate}_w{args.w_init}_layers{'-'.join(args.layers.split())}"
 
     train_losses = []
     val_losses = []
@@ -54,7 +53,7 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
 
             # LOSS
 
-            train_loss = loss_fn.forward(y_batch, predictions)
+            train_loss = loss_fn(y_batch, predictions)
 
             # BACKPROP
 
@@ -89,7 +88,7 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
 
         val_predictions = softmax(val_logits)
 
-        val_loss = loss_fn.forward(y_valid, val_predictions)
+        val_loss = loss_fn(y_valid, val_predictions)
 
         val_pred_classes = np.argmax(val_predictions, axis=1)
         val_true_classes = np.argmax(y_valid, axis=1)
@@ -130,6 +129,10 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
         val_accuracies, 
         chart_file
     )
+
+    activation_stds = network.activation_stds(X_valid)
+    plot_activation_stds(activation_stds, chart_file)
+
     print (f"\nTraining complete.")
     # print (f"num_batches: {num_batches}")
     print (f"Final training loss: {train_losses[-1]:.4f}")
@@ -137,3 +140,4 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
     print (f"Final validation loss: {val_losses[-1]:.4f}")
     print (f"Final validation accuracy: {val_accuracy:.4f}")
     print (f"Saved learning curves to {chart_file}_loss.png and {chart_file}_accuracy.png")
+    print (f"Saved activation std plot to {chart_file}_activation_stds.png")

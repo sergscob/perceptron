@@ -6,6 +6,7 @@ from training.layer import DenseLayer
 class Network:
     def __init__(self):
         self.layers = []
+        self.normalization = None
 
 
     def add(self, layer):
@@ -18,15 +19,19 @@ class Network:
         return x
 
 
+    def activation_stds(self, x):
+        stds = []
+
+        for layer in self.layers[:-1]:
+            x = layer.forward(x)
+            stds.append(float(x.std()))
+
+        return stds
+
+
     def backward(self, gradient, learning_rate):
-        # reverse order
         for l in reversed(self.layers):
             gradient = l.backward(gradient, learning_rate)
-
-
-    # def predict(self, x):
-    #     output = self.forward(x)
-    #     return np.argmax(output, axis=1)
 
 
     def save(self, filename):
@@ -34,6 +39,9 @@ class Network:
 
         for layer in self.layers:
             data["layers"].append(layer.save())
+
+        if self.normalization is not None:
+            data["normalization"] = self.normalization
 
         with open(filename, "w", encoding="utf-8") as file:
             json.dump(data, file)
@@ -52,5 +60,9 @@ class Network:
 
             layer = DenseLayer.fromJSON(saved_layer)
             network.add(layer)
+
+        normalization = data.get("normalization")
+        if normalization is not None:
+            network.normalization = normalization
 
         return network

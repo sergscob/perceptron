@@ -4,12 +4,11 @@ import pandas as pd
 import numpy as np
 
 def split(X: np.ndarray, y: np.ndarray, train_ratio: float = 0.8) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: 
-    
     indices = np.random.permutation(len(X))
-    split = int(train_ratio * len(X))
+    split_ind = int(train_ratio * len(X))
     
-    train_idx = indices[:split]
-    valid_idx = indices[split:]
+    train_idx = indices[:split_ind]
+    valid_idx = indices[split_ind:]
 
     X_train = X[train_idx]
     X_valid = X[valid_idx]
@@ -20,7 +19,7 @@ def split(X: np.ndarray, y: np.ndarray, train_ratio: float = 0.8) -> tuple[np.nd
     return X_train, X_valid, y_train, y_valid   
 
 
-def saveCSV(X: np.ndarray, y: np.ndarray, filename: str) -> None:
+def saveCSV(X: np.ndarray, y: np.ndarray, filename: str):
     X_df = pd.DataFrame(X)
     y_series = pd.Series(np.asarray(y).reshape(-1), name="y")
     df = pd.concat([y_series, X_df ], axis=1)
@@ -29,10 +28,11 @@ def saveCSV(X: np.ndarray, y: np.ndarray, filename: str) -> None:
 
 def main() :
     parser = argparse.ArgumentParser()
-    parser.add_argument("-s", "--seed", type=int, default=42, help="set random seed")
+    parser.add_argument("-s", "--seed", type=int, default=None, help="set random seed")
     args = parser.parse_args()
 
-    np.random.seed(args.seed)
+    if args.seed is not None:
+        np.random.seed(args.seed)
 
     try:
         df = pd.read_csv("data/data.csv", header=None)
@@ -49,6 +49,7 @@ def main() :
     X_train, X_valid, y_train, y_valid = split(X, y)
     saveCSV(X_train, y_train, "data/train.csv")
     saveCSV(X_valid, y_valid, "data/valid.csv")
+    print (f"Split data: {len(X_train)} / {len(X_valid)}")
 
 
 if __name__ == "__main__":

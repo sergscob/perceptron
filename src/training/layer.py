@@ -31,8 +31,7 @@ class DenseLayer:
             return np.random.normal(0.0, std, size=(input_size, output_size))
 
         raise ValueError(
-            f"Unsupported w_init: {w_init}. "
-            "Supported values: heUniform, xavierUniform, heNormal"
+            f"Unsupported w_init: {w_init}. try heUniform, xavierUniform, heNormal"
         )
 
 
@@ -67,10 +66,7 @@ class DenseLayer:
 
 
     def backward(self, dA, learning_rate):
-
-        """
-        dA = gradient from next layer
-        """
+        # dA = gradient from next layer
 
         m = self.input.shape[0]
 

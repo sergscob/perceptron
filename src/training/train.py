@@ -1,7 +1,7 @@
 import numpy as np
 from training.activations import softmax
 from training.loss import lossCrossEntropy
-from training.plots import plot_activation_stds, plot_learning_curves
+from training.plots import plot_layer_stats, plot_learning_curves
 
 
 def train(network, X_train, y_train, X_valid, y_valid, args):
@@ -22,10 +22,8 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
     for epoch in range(epochs):
 
         num_batches = 0
-        # =========================
-        # SHUFFLE
-        # =========================
 
+        # SHUFFLE
         indices = np.random.permutation(len(X_train))
 
         X_train = X_train[indices]
@@ -34,10 +32,6 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
         epoch_loss = 0
         epoch_accuracy = 0
 
-        # =========================
-        # MINI-BATCH TRAINING
-        # =========================
-
         for start in range(0, len(X_train), batch_size):
 
             end = start + batch_size
@@ -45,27 +39,17 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
             X_batch = X_train[start:end]
             y_batch = y_train[start:end]
 
-            # FORWARD
-
             logits = network.forward(X_batch)
-
             predictions = softmax(logits)
-
-            # LOSS
-
             train_loss = loss_fn(y_batch, predictions)
 
-            # BACKPROP
-
+            # BACK
             gradient = predictions - y_batch
-
             network.backward(gradient, learning_rate)
 
             # ACCURACY
-
             pred_classes = np.argmax(predictions, axis=1)
             true_classes = np.argmax(y_batch, axis=1)
-
             accuracy = np.mean(pred_classes == true_classes)
 
             epoch_loss += train_loss
@@ -73,41 +57,28 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
 
             num_batches += 1
 
-        # =========================
-        # AVERAGE TRAIN METRICS
-        # =========================
+        # METRICS
 
         epoch_loss /= num_batches
         epoch_accuracy /= num_batches
 
-        # =========================
         # VALIDATION
-        # =========================
 
         val_logits = network.forward(X_valid)
-
         val_predictions = softmax(val_logits)
-
         val_loss = loss_fn(y_valid, val_predictions)
-
         val_pred_classes = np.argmax(val_predictions, axis=1)
         val_true_classes = np.argmax(y_valid, axis=1)
 
         val_accuracy = np.mean(val_pred_classes == val_true_classes)
 
-        # =========================
-        # SAVE HISTORY
-        # =========================
-
+        # CHARTS
         train_losses.append(epoch_loss)
         val_losses.append(val_loss)
-
         train_accuracies.append(epoch_accuracy)
         val_accuracies.append(val_accuracy)
 
-        # =========================
         # PRINT
-        # =========================
 
         if args.verbose:
             print(
@@ -118,10 +89,7 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
                 f"- val_accuracy: {val_accuracy:.4f}"
             )
 
-    # =========================
-    # PLOTS
-    # =========================
-
+    # CHARTS
     plot_learning_curves(
         train_losses,
         val_losses,
@@ -130,8 +98,12 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
         chart_file
     )
 
-    activation_stds = network.activation_stds(X_valid)
-    plot_activation_stds(activation_stds, chart_file)
+    stats = network.layer_stats(X_valid)
+    plot_layer_stats(stats, chart_file)
+
+    if args.verbose:
+        for i, (s, m, a) in enumerate(zip(stats["stds"], stats["means"], stats["alive"])):
+            print(f"layer {i+1}: std={s:.4f}, mean={m:.4f}, alive={a:.4f}")
 
     print (f"\nTraining complete.")
     # print (f"num_batches: {num_batches}")
@@ -140,4 +112,4 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
     print (f"Final validation loss: {val_losses[-1]:.4f}")
     print (f"Final validation accuracy: {val_accuracy:.4f}")
     print (f"Saved learning curves to {chart_file}_loss.png and {chart_file}_accuracy.png")
-    print (f"Saved activation std plot to {chart_file}_activation_stds.png")
+    print (f"Saved activation stats plot to {chart_file}_layer_stats.png")

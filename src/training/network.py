@@ -19,14 +19,18 @@ class Network:
         return x
 
 
-    def activation_stds(self, x):
+    def layer_stats(self, x):
         stds = []
+        means = []
+        alives = []
 
         for layer in self.layers[:-1]:
             x = layer.forward(x)
             stds.append(float(x.std()))
+            means.append(float(x.mean()))
+            alives.append(float((layer.z > 0).mean()))
 
-        return stds
+        return {"stds": stds, "means": means, "alive": alives}
 
 
     def backward(self, gradient, learning_rate):

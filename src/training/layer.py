@@ -83,7 +83,6 @@ class DenseLayer:
         # gradient for previous layer
         dInput = np.dot(dZ, self.W.T)
 
-        # gradient descent update
         self.W -= learning_rate * dW
         self.b -= learning_rate * db
 

@@ -40,7 +40,9 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
             y_batch = y_train[start:end]
 
             logits = network.forward(X_batch)
+            # print (f"batch {num_batches+1}: logits={logits}")
             predictions = softmax(logits)
+            # print (f"batch {num_batches+1}: predictions={predictions}")
             train_loss = loss_fn(y_batch, predictions)
 
             # BACK
@@ -49,7 +51,9 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
 
             # ACCURACY
             pred_classes = np.argmax(predictions, axis=1)
+            # print (f"batch {num_batches+1}: pred_classes={pred_classes}")
             true_classes = np.argmax(y_batch, axis=1)
+            # print (f"batch {num_batches+1}: true_classes={true_classes}")
             accuracy = np.mean(pred_classes == true_classes)
 
             epoch_loss += train_loss

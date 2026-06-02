@@ -4,7 +4,7 @@ import numpy as np
 
 from training.activations import softmax
 from training.network import Network
-from training.utils import loadCSV
+from training.utils import loadCSV, to_hot
 
 
 def binary_cross_entropy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
@@ -45,9 +45,15 @@ def main():
     probabilities = softmax(logits)
     positive_class_prob = probabilities[:, 1]
 
-    predictions = (positive_class_prob >= 0.5).astype(int)
-    accuracy = float(np.mean(predictions == y))
+    # predictions = (positive_class_prob >= 0.5).astype(int)
+    # accuracy = float(np.mean(predictions == y))
     loss = binary_cross_entropy(y, positive_class_prob)
+    y_valid = to_hot(y)
+
+    true_classes = np.argmax(y_valid, axis=1)
+    pred_classes = np.argmax(probabilities, axis=1)
+
+    accuracy = np.mean(pred_classes == true_classes)
 
     print(f"Loaded model from {args.model}")
     print(f"Loaded dataset from {args.data}")

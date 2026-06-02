@@ -1,5 +1,6 @@
 import argparse
 import sys
+import os
 import random
 import numpy as np
 
@@ -52,7 +53,7 @@ def main():
     for w in words:
         try:
             n = int(w)
-            if n < 2 or n > 1000:
+            if n < 2 or n > 10000:
                 print (f"Size of layer must be 2-1000")
                 sys.exit(1)
             layers.append(n)
@@ -70,6 +71,7 @@ def main():
     print (f"Using epochs: {args.epochs}")
     print (f"Using learning rate: {args.learning_rate}")
     print (f"Using weights init: {args.w_init}")
+    os.makedirs("result/charts", exist_ok=True)
 
     network = Network()
     network.add(DenseLayer(X_train.shape[1], layers[0], w_init=args.w_init))

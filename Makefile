@@ -12,10 +12,13 @@ venv:
 	fi
 
 split: venv
-	./venv/bin/python3 src/split.py $(ARGS)
+	./.venv/bin/python3 src/split.py $(ARGS)
 
 train: venv
-	./venv/bin/python3 src/train.py $(ARGS)
+	./.venv/bin/python3 src/train.py $(ARGS)
 
 predict: venv
-	./venv/bin/python3 src/predict.py $(ARGS)	
+	./.venv/bin/python3 src/predict.py $(ARGS)	
+
+fclear: 
+	rm -rf .venv	

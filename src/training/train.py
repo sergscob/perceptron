@@ -1,3 +1,5 @@
+import json
+import os
 import numpy as np
 from training.activations import softmax
 from training.loss import lossCrossEntropy
@@ -105,6 +107,28 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
     stats = network.layer_stats(X_valid)
     plot_layer_stats(stats, chart_file)
 
+    history = {
+        "model_name": chart_file,
+        "epochs": epochs,
+        "train_loss": train_losses,
+        "val_loss": val_losses,
+        "train_accuracy": train_accuracies,
+        "val_accuracy": val_accuracies,
+        "layer_stats": stats,
+        "config": {
+            "activation": args.activation,
+            "batch_size": batch_size,
+            "learning_rate": learning_rate,
+            "w_init": args.w_init,
+            "layers": args.layers,
+        },
+    }
+
+    os.makedirs("result/hist", exist_ok=True)
+    history_path = f"result/hist/{chart_file}.json"
+    with open(history_path, "w", encoding="utf-8") as file:
+        json.dump(history, file)
+
     if args.verbose:
         for i, (s, m, a) in enumerate(zip(stats["stds"], stats["means"], stats["alive"])):
             print(f"layer {i+1}: std={s:.4f}, mean={m:.4f}, alive={a:.4f}")
@@ -117,3 +141,4 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
     print (f"Final validation accuracy: {val_accuracy:.4f}")
     print (f"Saved learning curves to {chart_file}_loss.png and {chart_file}_accuracy.png")
     print (f"Saved activation stats plot to {chart_file}_layer_stats.png")
+    print (f"Saved history to {history_path}")

@@ -43,3 +43,21 @@ def plot_layer_stats(stats, chart_file):
 
     plt.savefig("result/charts/" + chart_file + "_layer_stats.png")
     plt.close()
+
+
+def plot_model_comparison(hists, metric, output_path, title=None):
+    plt.figure()
+
+    for history in hists:
+        values = history[metric]
+        epochs = range(1, len(values) + 1)
+        label = history.get("label") or history.get("model_name", "model")
+        plt.plot(epochs, values, label=label)
+
+    plt.xlabel("Epoch")
+    plt.ylabel(metric)
+    plt.title(title or f"Model comparison: {metric}")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(output_path)
+    plt.close()

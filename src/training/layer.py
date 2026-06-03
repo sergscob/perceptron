@@ -18,6 +18,9 @@ class DenseLayer:
 
     @staticmethod
     def _initialize_weights(input_size, output_size, w_init):
+        if w_init == "zero":
+            return np.zeros((input_size, output_size))
+
         if w_init == "heUniform":
             limit = np.sqrt(6.0 / input_size)
             return np.random.uniform(-limit, limit, size=(input_size, output_size))

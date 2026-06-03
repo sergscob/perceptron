@@ -27,6 +27,24 @@ def plot_learning_curves(train_losses, val_losses, train_accs, val_accs, chart_f
     plt.close()
 
 
+def plot_classification_metrics(precisions, recalls, f1_scores, chart_file, title="Precision / Recall / F1"):
+    epochs = range(1, len(precisions) + 1)
+
+    plt.figure()
+    plt.plot(epochs, precisions, label="Precision")
+    plt.plot(epochs, recalls, label="Recall")
+    plt.plot(epochs, f1_scores, label="F1-score")
+    plt.title(title)
+    plt.xlabel("Epoch")
+    plt.ylabel("Score")
+    plt.ylim(0.0, 1.0)
+    plt.legend()
+    plt.grid(True)
+
+    plt.savefig("result/charts/" + chart_file + "_classification_metrics.png")
+    plt.close()
+
+
 def plot_layer_stats(stats, chart_file):
     layers = range(1, len(stats["stds"]) + 1)
 

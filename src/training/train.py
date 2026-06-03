@@ -3,7 +3,18 @@ import os
 import numpy as np
 from training.activations import softmax
 from training.loss import lossCrossEntropy
-from training.plots import plot_layer_stats, plot_learning_curves
+from training.plots import plot_classification_metrics, plot_layer_stats, plot_learning_curves
+from training.metrics import compute_classification_metrics 
+
+
+def snapshot_layer_params(network):
+    return [(layer.W.copy(), layer.b.copy()) for layer in network.layers]
+
+
+def restore_layer_params(network, snapshot):
+    for layer, (weights, bias) in zip(network.layers, snapshot):
+        layer.W = weights
+        layer.b = bias
 
 
 def train(network, X_train, y_train, X_valid, y_valid, args):
@@ -11,33 +22,41 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
     learning_rate = float(args.learning_rate)
     epochs = int(args.epochs) 
     batch_size = int(args.batch) 
+    patience = int(getattr(args, "patience", 0))
+    min_delta = float(getattr(args, "min_delta", 0.0))
     loss_fn = lossCrossEntropy
 
     chart_file = f"{args.activation}_b{batch_size}_e{epochs}_lr{learning_rate}_w{args.w_init}_layers{'-'.join(args.layers.split())}"
 
     train_losses = []
     val_losses = []
-
     train_accuracies = []
     val_accuracies = []
+    train_precisions = []
+    train_recalls = []
+    train_f1s = []
+    val_precisions = []
+    val_recalls = []
+    val_f1s = []
+
+    best_val_loss = float("inf")
+    best_epoch = -1
+    best_epoch_state = snapshot_layer_params(network)
+    epochs_without_improvement = 0
+    stopped_early = False
 
     for epoch in range(epochs):
-
         num_batches = 0
 
         # SHUFFLE
         indices = np.random.permutation(len(X_train))
-
         X_train = X_train[indices]
         y_train = y_train[indices]
 
         epoch_loss = 0
-        epoch_accuracy = 0
 
         for start in range(0, len(X_train), batch_size):
-
             end = start + batch_size
-
             X_batch = X_train[start:end]
             y_batch = y_train[start:end]
 
@@ -51,70 +70,87 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
             gradient = predictions - y_batch
             network.backward(gradient, learning_rate)
 
-            # ACCURACY
-            pred_classes = np.argmax(predictions, axis=1)
-            # print (f"batch {num_batches+1}: pred_classes={pred_classes}")
-            true_classes = np.argmax(y_batch, axis=1)
-            # print (f"batch {num_batches+1}: true_classes={true_classes}")
-            accuracy = np.mean(pred_classes == true_classes)
-
             epoch_loss += train_loss
-            epoch_accuracy += accuracy
-
             num_batches += 1
 
-        # METRICS
-
         epoch_loss /= num_batches
-        epoch_accuracy /= num_batches
 
         # VALIDATION
-
         val_logits = network.forward(X_valid)
         val_predictions = softmax(val_logits)
         val_loss = loss_fn(y_valid, val_predictions)
-        val_pred_classes = np.argmax(val_predictions, axis=1)
-        val_true_classes = np.argmax(y_valid, axis=1)
 
-        val_accuracy = np.mean(val_pred_classes == val_true_classes)
+        # METRICS
+        train_logits_full = network.forward(X_train)
+        train_predictions_full = softmax(train_logits_full)
 
-        # CHARTS
+        train_accuracy, train_precision, train_recall, train_f1 = compute_classification_metrics(y_train, train_predictions_full)
         train_losses.append(epoch_loss)
+        train_accuracies.append(train_accuracy)
+        train_precisions.append(train_precision)
+        train_recalls.append(train_recall)
+        train_f1s.append(train_f1)
+
+        val_accuracy, val_precision, val_recall, val_f1 = compute_classification_metrics(y_valid, val_predictions)
+        val_precisions.append(val_precision)
+        val_recalls.append(val_recall)
+        val_f1s.append(val_f1)
         val_losses.append(val_loss)
-        train_accuracies.append(epoch_accuracy)
         val_accuracies.append(val_accuracy)
 
-        # PRINT
+        if val_loss < best_val_loss - min_delta:
+            best_val_loss = val_loss
+            best_epoch = epoch
+            best_epoch_state = snapshot_layer_params(network)
+            epochs_without_improvement = 0
+        else:
+            epochs_without_improvement += 1
 
         if args.verbose:
             print(
                 f"epoch {epoch+1}/{epochs} "
                 f"- loss: {epoch_loss:.4f} "
-                f"- accuracy: {epoch_accuracy:.4f} "
+                f"- accuracy: {train_accuracy:.4f} "
                 f"- val_loss: {val_loss:.4f} "
-                f"- val_accuracy: {val_accuracy:.4f}"
+                f"- val_accuracy: {val_accuracy:.4f} "
+                f"- val_f1: {val_f1:.4f}"
             )
 
-    # CHARTS
-    plot_learning_curves(
-        train_losses,
-        val_losses,
-        train_accuracies,
-        val_accuracies, 
-        chart_file
-    )
+        if patience > 0 and epochs_without_improvement >= patience:
+            stopped_early = True
+            print(f"early stopping at epoch {epoch+1} (best val_loss: {best_val_loss:.4f} at epoch {best_epoch+1})")
+            break
 
-    stats = network.layer_stats(X_valid)
-    plot_layer_stats(stats, chart_file)
+    if stopped_early:
+        restore_layer_params(network, best_epoch_state)
+
+    # CHARTS
+    plot_learning_curves( train_losses, val_losses, train_accuracies, val_accuracies, chart_file)
+    plot_classification_metrics(val_precisions, val_recalls, val_f1s, chart_file)
+    # plot_layer_stats(network.layer_stats(X_valid), chart_file)
 
     history = {
         "model_name": chart_file,
         "epochs": epochs,
+        "stopped_epoch": len(train_losses),
+        "best_epoch": best_epoch + 1 if best_epoch >= 0 else None,
+        "best_val_loss": best_val_loss if best_epoch >= 0 else None,
+        "early_stopping": {
+            "enabled": patience > 0,
+            "patience": patience,
+            "min_delta": min_delta,
+            "stopped": stopped_early,
+        },
         "train_loss": train_losses,
         "val_loss": val_losses,
         "train_accuracy": train_accuracies,
         "val_accuracy": val_accuracies,
-        "layer_stats": stats,
+        "train_precision": train_precisions,
+        "train_recall": train_recalls,
+        "train_f1": train_f1s,
+        "val_precision": val_precisions,
+        "val_recall": val_recalls,
+        "val_f1": val_f1s,
         "config": {
             "activation": args.activation,
             "batch_size": batch_size,
@@ -129,16 +165,12 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
     with open(history_path, "w", encoding="utf-8") as file:
         json.dump(history, file)
 
-    if args.verbose:
-        for i, (s, m, a) in enumerate(zip(stats["stds"], stats["means"], stats["alive"])):
-            print(f"layer {i+1}: std={s:.4f}, mean={m:.4f}, alive={a:.4f}")
-
     print (f"\nTraining complete.")
-    # print (f"num_batches: {num_batches}")
     print (f"Final training loss: {train_losses[-1]:.4f}")
     print (f"Final training accuracy: {train_accuracies[-1]:.4f}")
     print (f"Final validation loss: {val_losses[-1]:.4f}")
     print (f"Final validation accuracy: {val_accuracy:.4f}")
     print (f"Saved learning curves to {chart_file}_loss.png and {chart_file}_accuracy.png")
+    print (f"Saved classification metrics plot to {chart_file}_classification_metrics.png")
     print (f"Saved activation stats plot to {chart_file}_layer_stats.png")
     print (f"Saved history to {history_path}")

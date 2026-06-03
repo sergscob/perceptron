@@ -1,10 +1,10 @@
 import numpy as np
-from training.activations import sigmoid, sigmoid_derivative, softmax, relu, relu_derivative
+from training.activations import Activation, get_activation
 
 class DenseLayer:
-    def __init__(self, input_size, output_size, activation="sigmoid", w_init=None):
+    def __init__(self, input_size, output_size, activation=None, w_init=None):
 
-        self.activation = activation
+        self.activation = get_activation(activation or "sigmoid")
         self.w_init = w_init
 
         self.W = self._initialize_weights(input_size, output_size, w_init)
@@ -38,7 +38,7 @@ class DenseLayer:
     @classmethod
     def fromJSON(cls, saved_params):
         layer = cls.__new__(cls)
-        layer.activation = saved_params["activation"]
+        layer.activation = get_activation(saved_params["activation"])
         layer.w_init = saved_params.get("w_init")
         layer.input = None
         layer.z = None
@@ -54,13 +54,7 @@ class DenseLayer:
         self.input = x
 
         self.z = np.dot(x, self.W) + self.b
-
-        if self.activation == "sigmoid":
-            self.output = sigmoid(self.z)
-        elif self.activation == "relu":
-            self.output = relu(self.z)
-        else:
-            self.output = self.z
+        self.output = self.activation.forward(self.z)
 
         return self.output
 
@@ -70,12 +64,7 @@ class DenseLayer:
 
         m = self.input.shape[0]
 
-        if self.activation == "sigmoid":
-            dZ = dA * sigmoid_derivative(self.z)
-        elif self.activation == "relu":
-            dZ = dA * relu_derivative(self.z)
-        else:
-            dZ = dA
+        dZ = dA * self.activation.derivative(self.z)
 
         dW = np.dot(self.input.T, dZ) / m
         db = np.sum(dZ, axis=0, keepdims=True) / m
@@ -96,7 +85,7 @@ class DenseLayer:
             "output_size": int(self.W.shape[1]),
             "W": self.W.tolist(),
             "b": self.b.tolist(),
-            "activation": self.activation,
+            "activation": self.activation.name,
             "w_init": self.w_init,
         }
     

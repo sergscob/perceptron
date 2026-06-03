@@ -7,7 +7,19 @@ import sys
 from training.plots import plot_model_comparison
 
 
-METRIC_CHOICES = ["train_loss", "val_loss", "train_accuracy", "val_accuracy"]
+METRIC_CHOICES = [
+    "train_loss",
+    "val_loss",
+    "train_accuracy",
+    "val_accuracy",
+    "train_precision",
+    "train_recall",
+    "train_f1",
+    "val_precision",
+    "val_recall",
+    "val_f1",
+]
+DEFAULT_METRIC = "val_loss"
 DEFAULT_HISTORY_GLOB = "result/hist/*.json"
 
 
@@ -38,7 +50,7 @@ def load_hist(patterns):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("hist", nargs="*", help="History JSON files or glob patterns. If omitted, all files from result/hist/*.json are used.")
-    parser.add_argument("-m", "--metric", default="val_accuracy", choices=METRIC_CHOICES, help="Metric to compare")
+    parser.add_argument("-m", "--metric", default=DEFAULT_METRIC, choices=METRIC_CHOICES, help="Metric to compare")
     parser.add_argument("--output", default=None, help="Output PNG path (default: result/charts/compare/<metric>.png)")
     args = parser.parse_args()
 

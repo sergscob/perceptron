@@ -15,10 +15,12 @@ def main():
     parser.add_argument("-b", "--batch", default=10, help="set the batch size")
     parser.add_argument("-n", "--epochs", default=100, help="set the number of epochs")
     parser.add_argument("-a", "--activation", default="sigmoid", choices=["sigmoid", "relu"], help="set the activation function (sigmoid/relu)")
+    parser.add_argument("-p", "--patience", type=int, default=0, help="stop after this many epochs without validation improvement; 0 disables early stopping")
+    parser.add_argument("-d", "--min_delta", type=float, default=0.0, help="minimum validation loss improvement required to reset patience")
     parser.add_argument("-r", "--learning_rate", default=0.05, help="set the learning rate")
     parser.add_argument("-v", "--verbose", action="store_true", help="set verbose output")
     parser.add_argument("-l", "--layers", default="24 24 24", help="layers (24 24 24)")
-    parser.add_argument("-w", "--w_init", default="heUniform", choices=["heUniform", "xavierUniform", "heNormal"], help="set the weights initializer")
+    parser.add_argument("-w", "--w_init", default="heUniform", choices=["heUniform", "xavierUniform", "heNormal", "zero"], help="set the weights initializer")
     parser.add_argument("-s", "--seed", type=int, default=None, help="set random seed")
     args = parser.parse_args()
 
@@ -42,6 +44,14 @@ def main():
 
     if (int(args.epochs) <= 0):
         print (f"Invalid number of epochs: {args.epochs}.")
+        sys.exit(1)
+
+    if (int(args.patience) < 0):
+        print (f"Invalid patience: {args.patience}.")
+        sys.exit(1)
+
+    if (float(args.min_delta) < 0):
+        print (f"Invalid min_delta: {args.min_delta}.")
         sys.exit(1)
 
     if (float(args.learning_rate) <= 0.00001 or float(args.learning_rate) > 100 or not isinstance(float(args.learning_rate), float)):
@@ -69,14 +79,15 @@ def main():
     print (f"Using layers: {layers}.")
     print (f"Using batch size: {args.batch}")
     print (f"Using epochs: {args.epochs}")
+    print (f"Using early stopping: patience={args.patience}, min_delta={args.min_delta}")
     print (f"Using learning rate: {args.learning_rate}")
     print (f"Using weights init: {args.w_init}")
     os.makedirs("result/charts", exist_ok=True)
 
     network = Network()
-    network.add(DenseLayer(X_train.shape[1], layers[0], w_init=args.w_init))
+    network.add(DenseLayer(X_train.shape[1], layers[0], activation=args.activation, w_init=args.w_init))
     for i in range(1, len(layers)):
-        network.add(DenseLayer(layers[i-1], layers[i], w_init=args.w_init))
+        network.add(DenseLayer(layers[i-1], layers[i], activation=args.activation, w_init=args.w_init))
     network.add(DenseLayer(layers[-1], 2, activation="none", w_init=args.w_init))
 
     y_train = to_hot(y_train)

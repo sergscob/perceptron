@@ -22,3 +22,6 @@ predict: venv
 
 fclear: 
 	rm -rf .venv	
+
+act: venv
+	. ./.venv/bin/activate

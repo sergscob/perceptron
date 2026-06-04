@@ -44,10 +44,10 @@ def main():
         sys.exit(1)
 
     if (int(args.batch) <= 0 or int(args.batch) > len(X_train)):
-        print (f"Invalid batch size: {args.batch}.")
+        print (f"Invalid batch size: {args.batch}. max={len(X_train)}")
         sys.exit(1)
 
-    if (int(args.epochs) <= 0):
+    if (int(args.epochs) <= 0 or int(args.epochs) > 100000):
         print (f"Invalid number of epochs: {args.epochs}.")
         sys.exit(1)
 

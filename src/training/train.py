@@ -79,7 +79,6 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
         train_accuracy, train_precision, train_recall, train_f1 = compute_classification_metrics(y_train, train_predictions_full)
         metrics.add_train(epoch_loss, train_accuracy, train_precision, train_recall, train_f1, train_mse, train_rmse)
         
-
         val_mse, val_rmse = compute_regression_metrics(y_valid, val_predictions)
         val_accuracy, val_precision, val_recall, val_f1 = compute_classification_metrics(y_valid, val_predictions)
         metrics.add_val(val_loss, val_accuracy, val_precision, val_recall, val_f1, val_mse, val_rmse)
@@ -109,6 +108,11 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
 
     if stopped_early:
         restore_layer_params(network, best_epoch_state)
+        val_logits = network.forward(X_valid)  
+        val_predictions = softmax(val_logits)
+        val_loss = lossCrossEntropy(y_valid, val_predictions)
+        val_mse, val_rmse = compute_regression_metrics(y_valid, val_predictions)
+        val_accuracy, val_precision, val_recall, val_f1 = compute_classification_metrics(y_valid, val_predictions)
 
     # CHARTS
     plot_learning_curves(metrics.train_losses, metrics.val_losses, metrics.train_accuracies, metrics.val_accuracies, chart_file)
@@ -145,18 +149,17 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
         json.dump(history, file)
 
     print (f"\nTraining complete.")
-    print ("")
-    print (f"Final training loss: {metrics.train_losses[-1]:.4f}")
+    print (f"\nFinal training loss: {metrics.train_losses[-1]:.4f}")
     print (f"Final training accuracy: {metrics.train_accuracies[-1]:.4f}")
     print (f"Final training MSE: {train_mse:.6f}")
     print (f"Final training RMSE: {train_rmse:.6f}")
-    print ("")
-    print (f"Final validation loss: {metrics.val_losses[-1]:.4f}")
+    
+    print (f"\nFinal validation loss: {metrics.val_losses[-1]:.4f}")
     print (f"Final validation accuracy: {val_accuracy:.4f}")
     print (f"Final validation MSE: {val_mse:.6f}")
     print (f"Final validation RMSE: {val_rmse:.6f}")
-    print ("")
-    print (f"Saved learning curves to {chart_file}_loss.png and {chart_file}_accuracy.png")
+    
+    print (f"\nSaved learning curves to {chart_file}_loss.png and {chart_file}_accuracy.png")
     print (f"Saved classification metrics plot to {chart_file}_classification_metrics.png")
     print (f"Saved activation stats plot to {chart_file}_layer_stats.png")
     print (f"Saved history to {history_path}")

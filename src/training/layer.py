@@ -41,9 +41,7 @@ class DenseLayer:
             std = np.sqrt(2.0 / input_size)
             return np.random.normal(0.0, std, size=(input_size, output_size))
 
-        raise ValueError(
-            f"Unsupported w_init: {w_init}. try heUniform, xavierUniform, heNormal"
-        )
+        raise ValueError(f"Unsupported w_init: {w_init}. try heUniform, xavierUniform, heNormal")
 
 
     @classmethod
@@ -68,9 +66,7 @@ class DenseLayer:
 
 
     def forward(self, x):
-
         self.input = x
-
         self.z = np.dot(x, self.W) + self.b
         self.output = self.activation.forward(self.z)
 
@@ -79,7 +75,6 @@ class DenseLayer:
 
     def backward(self, dA):
         # dA = gradient from next layer
-
         m = self.input.shape[0]
 
         dZ = dA * self.activation.derivative(self.z)
@@ -92,6 +87,8 @@ class DenseLayer:
 
         self.W = self.weight_optimizer.update(self.W, dW)
         self.b = self.bias_optimizer.update(self.b, db)
+        # self.W = self.W - self.learning_rate * dW
+        # self.b = self.b - self.learning_rate * db
 
         return dInput
 

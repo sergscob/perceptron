@@ -33,9 +33,9 @@ class Network:
         return {"stds": stds, "means": means, "alive": alives}
 
 
-    def backward(self, gradient, learning_rate):
+    def backward(self, gradient):
         for l in reversed(self.layers):
-            gradient = l.backward(gradient, learning_rate)
+            gradient = l.backward(gradient)
 
 
     def save(self, filename):

@@ -48,10 +48,6 @@ def get_activation(name):
         "relu": ReLUActivation,
         "none": EmptyActivation,
     }
-
-    if isinstance(name, Activation):
-        return name
-
     try:
         return activations[name]()
     except KeyError as exc:

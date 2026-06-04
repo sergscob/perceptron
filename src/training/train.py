@@ -20,6 +20,8 @@ def restore_layer_params(network, snapshot):
 def train(network, X_train, y_train, X_valid, y_valid, args):
 
     learning_rate = float(args.learning_rate)
+    momentum = float(getattr(args, "momentum", 0.9))
+    optimizer_name = getattr(args, "optimizer", "nesterov")
     epochs = int(args.epochs) 
     batch_size = int(args.batch) 
     patience = int(getattr(args, "patience", 0))
@@ -68,7 +70,7 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
 
             # BACK
             gradient = predictions - y_batch
-            network.backward(gradient, learning_rate)
+            network.backward(gradient)
 
             epoch_loss += train_loss
             num_batches += 1
@@ -153,8 +155,10 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
         "val_f1": val_f1s,
         "config": {
             "activation": args.activation,
+            "optimizer": optimizer_name,
             "batch_size": batch_size,
             "learning_rate": learning_rate,
+            "momentum": momentum,
             "w_init": args.w_init,
             "layers": args.layers,
         },

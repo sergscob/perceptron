@@ -6,26 +6,27 @@ import numpy as np
 
 from training.layer import DenseLayer
 from training.network import Network
-from training.normalize import normalize
 from training.train import train
-from training.utils import to_hot, loadCSV
+from training.utils import to_hot, loadCSV, normalize
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-b", "--batch", default=10, help="set the batch size")
+    parser.add_argument("-b", "--batch", default=20, help="set the batch size")
     parser.add_argument("-n", "--epochs", default=100, help="set the number of epochs")
     parser.add_argument("-a", "--activation", default="sigmoid", choices=["sigmoid", "relu"], help="set the activation function (sigmoid/relu)")
+    parser.add_argument("-r", "--learning_rate", default=0.05, help="set the learning rate")
+    parser.add_argument("-l", "--layers", default="24 24", help="layers (24 24)")
+    parser.add_argument("-w", "--w_init", default="heUniform", choices=["heUniform", "xavierUniform", "heNormal", "zero"], help="set the weights initializer")
+    
+    parser.add_argument("-v", "--verbose", action="store_true", help="set verbose output")
+    parser.add_argument("-s", "--seed", type=int, default=None, help="set random seed")
+    
     parser.add_argument("-p", "--patience", type=int, default=0, help="stop after this many epochs without validation improvement; 0 disables early stopping")
     parser.add_argument("-d", "--min_delta", type=float, default=0.0, help="minimum validation loss improvement required to reset patience")
-    parser.add_argument("-r", "--learning_rate", default=0.05, help="set the learning rate")
     parser.add_argument("-o", "--optimizer", default="sgd", choices=["sgd", "momentum", "nesterov", "rmsprop", "adam"], help="set the optimizer")
     parser.add_argument("--momentum", type=float, default=0.9, help="set the momentum value for momentum-based optimizers")
     parser.add_argument("--beta2", type=float, default=0.999, help="set beta2 for Adam (and rho for RMSProp if desired)")
     parser.add_argument("--eps", type=float, default=1e-8, help="set epsilon for Adam/RMSProp numeric stability")
-    parser.add_argument("-v", "--verbose", action="store_true", help="set verbose output")
-    parser.add_argument("-l", "--layers", default="24 24 24", help="layers (24 24 24)")
-    parser.add_argument("-w", "--w_init", default="heUniform", choices=["heUniform", "xavierUniform", "heNormal", "zero"], help="set the weights initializer")
-    parser.add_argument("-s", "--seed", type=int, default=None, help="set random seed")
     args = parser.parse_args()
 
     if args.seed is not None:

@@ -44,8 +44,9 @@ def main():
     logits = network.forward(X)
     probabilities = softmax(logits)
     positive_class_prob = probabilities[:, 1]
+    # print(positive_class_prob)
 
-    # predictions = (positive_class_prob >= 0.5).astype(int)
+    predictions = (positive_class_prob >= 0.5).astype(int)
     # accuracy = float(np.mean(predictions == y))
     loss = binary_cross_entropy(y, positive_class_prob)
     y_valid = to_hot(y)
@@ -57,6 +58,7 @@ def main():
 
     print(f"Loaded model from {args.model}")
     print(f"Loaded dataset from {args.data}")
+    print(f"Predictions: {predictions}")
     print(f"Prediction accuracy: {accuracy:.4f}")
     print(f"Binary cross-entropy: {loss:.4f}")
 

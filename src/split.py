@@ -21,9 +21,9 @@ def split(X: np.ndarray, y: np.ndarray, train_ratio: float = 0.8) -> tuple[np.nd
 
 def saveCSV(X: np.ndarray, y: np.ndarray, filename: str):
     X_df = pd.DataFrame(X)
-    y_series = pd.Series(np.asarray(y).reshape(-1), name="y")
+    y_series = pd.Series(np.asarray(y).reshape(-1))
     df = pd.concat([y_series, X_df ], axis=1)
-    df.to_csv(filename, index=False)
+    df.to_csv(filename, index=False, header=False)
 
 
 def main() :

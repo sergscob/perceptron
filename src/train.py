@@ -38,7 +38,7 @@ def main():
     X_valid, y_valid = loadCSV("data/valid.csv")
 
     X_train, X_valid, mean, std = normalize(X_train, X_valid)
-    # print (X_train.shape[1])
+    # print (X_train.shape)
 
     if (args.activation not in ["sigmoid", "relu"]):
         print (f"Invalid activation function: {args.activation}.")

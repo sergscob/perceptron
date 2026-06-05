@@ -24,7 +24,11 @@ class MomentumOptimizer(Optimizer):
         if self.velocity is None:
             self.velocity = np.zeros_like(params)
 
-        self.velocity = self.momentum * self.velocity - self.learning_rate * gradients
+        velocity_momentum = self.momentum * self.velocity
+        velocity_gradient = self.learning_rate * gradients
+
+        self.velocity = velocity_momentum - velocity_gradient
+        # self.velocity = self.momentum * self.velocity - self.learning_rate * gradients
         return params + self.velocity
 
 
@@ -39,9 +43,19 @@ class NesterovMomentumOptimizer(Optimizer):
             self.velocity = np.zeros_like(params)
 
         previous_velocity = self.velocity.copy()
-        self.velocity = self.momentum * self.velocity - self.learning_rate * gradients
-        return params - self.momentum * previous_velocity + (1.0 + self.momentum) * self.velocity
 
+        velocity_momentum = self.momentum * previous_velocity
+        velocity_gradient = self.learning_rate * gradients
+
+        self.velocity = velocity_momentum - velocity_gradient
+
+        lookahead_correction = -self.momentum * previous_velocity
+        accelerated_step = (1.0 + self.momentum) * self.velocity
+
+        parameter_update = lookahead_correction + accelerated_step
+
+        return params + parameter_update
+    
 
 class RMSPropOptimizer(Optimizer):
     def __init__(self, learning_rate=0.001, rho=0.9, eps=1e-8):

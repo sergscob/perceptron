@@ -2,7 +2,7 @@ import json
 import os
 import numpy as np
 from training.activations import softmax
-from training.plots import plot_classification_metrics, plot_layer_stats, plot_learning_curves
+from training.plots import plot_figure, plot_layer_stats
 from training.metrics import MetricSeries, compute_classification_metrics, compute_regression_metrics, lossCrossEntropy
 
 
@@ -20,7 +20,7 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
 
     learning_rate = float(args.learning_rate)
     momentum = float(getattr(args, "momentum", 0.9))
-    optimizer_name = getattr(args, "optimizer", "nesterov")
+    optimizer_name = getattr(args, "optimizer", "sgd")
     epochs = int(args.epochs) 
     batch_size = int(args.batch) 
     patience = int(getattr(args, "patience", 0))
@@ -115,9 +115,12 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
         val_accuracy, val_precision, val_recall, val_f1 = compute_classification_metrics(y_valid, val_predictions)
 
     # CHARTS
-    plot_learning_curves(metrics.train_losses, metrics.val_losses, metrics.train_accuracies, metrics.val_accuracies, chart_file)
-    plot_classification_metrics(metrics.val_precisions, metrics.val_recalls, metrics.val_f1s, chart_file)
+    plot_figure("Loss", chart_file+ "_loss.png", metrics.train_losses, "Train Loss", metrics.val_losses, "Val Loss")
+    plot_figure("Accuracy", chart_file+ "_accuracy.png", metrics.train_accuracies, "Train Accuracy", metrics.val_accuracies, "Val Accuracy")
+    plot_figure("F1-Score", chart_file+ "_f1.png", metrics.val_precisions, "Val Precision", metrics.val_recalls, "Val Recall", metrics.train_f1s, "Train F1-Score")
     # plot_layer_stats(network.layer_stats(X_valid), chart_file)
+    plot_figure("Loss", "last_loss.png", metrics.train_losses, "Train Loss", metrics.val_losses, "Val Loss")
+    plot_figure("Accuracy", "last_accuracy.png", metrics.train_accuracies, "Train Accuracy", metrics.val_accuracies, "Val Accuracy")
 
     history = {
         "model_name": chart_file,
@@ -151,15 +154,15 @@ def train(network, X_train, y_train, X_valid, y_valid, args):
     print (f"\nTraining complete.")
     print (f"\nFinal training loss: {metrics.train_losses[-1]:.4f}")
     print (f"Final training accuracy: {metrics.train_accuracies[-1]:.4f}")
-    print (f"Final training MSE: {train_mse:.6f}")
-    print (f"Final training RMSE: {train_rmse:.6f}")
+    print (f"Final training MSE/RMSE: {train_mse:.6f}/{train_rmse:.6f}")
+    print (f"Final training precision: {train_precision:.4f}, Recall: {train_recall:.4f}, F1-score: {train_f1:.4f}")
     
     print (f"\nFinal validation loss: {metrics.val_losses[-1]:.4f}")
     print (f"Final validation accuracy: {val_accuracy:.4f}")
-    print (f"Final validation MSE: {val_mse:.6f}")
-    print (f"Final validation RMSE: {val_rmse:.6f}")
+    print (f"Final validation MSE/RMSE: {val_mse:.6f}/{val_rmse:.6f}")
+    print (f"Final validation precision: {val_precision:.4f}, Recall: {val_recall:.4f}, F1-score: {val_f1:.4f}\n")
     
-    print (f"\nSaved learning curves to {chart_file}_loss.png and {chart_file}_accuracy.png")
-    print (f"Saved classification metrics plot to {chart_file}_classification_metrics.png")
-    print (f"Saved activation stats plot to {chart_file}_layer_stats.png")
+    # print (f"\nSaved learning curves to {chart_file}_loss.png and {chart_file}_accuracy.png")
+    # print (f"Saved classification metrics plot to {chart_file}_classification_metrics.png")
+    # print (f"Saved activation stats plot to {chart_file}_layer_stats.png")
     print (f"Saved history to {history_path}")

@@ -23,14 +23,11 @@ DEFAULT_METRIC = "val_loss"
 DEFAULT_HISTORY_GLOB = "result/hist/*.json"
 
 
-def load_hist(patterns):
+def load_hist():
     files = []
-    for pattern in patterns:
-        matches = glob.glob(pattern)
-        if matches:
-            files.extend(matches)
-        elif os.path.isfile(pattern):
-            files.append(pattern)
+    matches = glob.glob(DEFAULT_HISTORY_GLOB)
+    if matches:
+        files.extend(matches)
 
     uniq_files = sorted(set(files))
     if not uniq_files:
@@ -49,15 +46,12 @@ def load_hist(patterns):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("hist", nargs="*", help="History JSON files or glob patterns. If omitted, all files from result/hist/*.json are used.")
     parser.add_argument("-m", "--metric", default=DEFAULT_METRIC, choices=METRIC_CHOICES, help="Metric to compare")
     parser.add_argument("--output", default=None, help="Output PNG path (default: result/charts/compare/<metric>.png)")
     args = parser.parse_args()
 
-    patterns = args.hist or [DEFAULT_HISTORY_GLOB]
-
     try:
-        hists = load_hist(patterns)
+        hists = load_hist()
     except Exception as exc:
         print(f"Error: {exc}")
         sys.exit(1)

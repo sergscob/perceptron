@@ -58,27 +58,6 @@ class RMSPropOptimizer(Optimizer):
         return params - self.learning_rate * gradients / (np.sqrt(self.cache) + self.eps)
 
 
-def get_optimizer(name, learning_rate=0.01, momentum=0.9, beta2=0.999, eps=1e-8):
-    if isinstance(name, Optimizer):
-        return name
-
-    optimizers = {
-        "sgd": lambda: SGDOptimizer(learning_rate=learning_rate),
-        "momentum": lambda: MomentumOptimizer(learning_rate=learning_rate, momentum=momentum),
-        "nesterov": lambda: NesterovMomentumOptimizer(learning_rate=learning_rate, momentum=momentum),
-        "rmsprop": lambda: RMSPropOptimizer(learning_rate=learning_rate, rho=momentum),
-        "adam": lambda: __import__("builtins").__build_class__(lambda: None, '') or None,
-    }
-
-    try:
-        # handle Adam separately since it needs beta2 and eps
-        if name == "adam":
-            return AdamOptimizer(learning_rate=learning_rate, beta1=momentum, beta2=beta2, eps=eps)
-        return optimizers[name]()
-    except KeyError as exc:
-        raise ValueError(f"Unsupported optimizer: {name}") from exc
-
-
 class AdamOptimizer(Optimizer):
     def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, eps=1e-8):
         self.learning_rate = learning_rate
@@ -103,3 +82,21 @@ class AdamOptimizer(Optimizer):
         v_hat = self.v / (1 - self.beta2 ** self.t)
 
         return params - self.learning_rate * m_hat / (np.sqrt(v_hat) + self.eps)
+
+
+
+def get_optimizer(name, learning_rate=0.01, momentum=0.9, beta2=0.999, eps=1e-8):
+    if isinstance(name, Optimizer):
+        return name
+    if name == "sgd":
+        return SGDOptimizer(learning_rate=learning_rate)
+    if name == "momentum":
+        return MomentumOptimizer(learning_rate=learning_rate, momentum=momentum)
+    if name == "nesterov":
+        return NesterovMomentumOptimizer(learning_rate=learning_rate, momentum=momentum)
+    if name == "rmsprop":
+        return RMSPropOptimizer(learning_rate=learning_rate, rho=momentum )
+    if name == "adam":
+        return AdamOptimizer(learning_rate=learning_rate, beta1=momentum, beta2=beta2, eps=eps)
+
+    raise ValueError(f"Unsupported optimizer: {name}")

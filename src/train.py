@@ -6,7 +6,7 @@ import numpy as np
 
 from training.layer import DenseLayer
 from training.network import Network
-from training.train import train
+from training.training import train
 from training.utils import to_hot, loadCSV, normalize
 
 def main():
@@ -22,7 +22,8 @@ def main():
     parser.add_argument("-s", "--seed", type=int, default=None, help="set random seed")
     
     parser.add_argument("-p", "--patience", type=int, default=0, help="stop after this many epochs without validation improvement; 0 disables early stopping")
-    parser.add_argument("-d", "--min_delta", type=float, default=0.0, help="minimum validation loss improvement required to reset patience")
+    parser.add_argument("-d", "--min_delta", type=float, default=0.001, help="minimum validation loss improvement required to reset patience")
+
     parser.add_argument("-o", "--optimizer", default="sgd", choices=["sgd", "momentum", "nesterov", "rmsprop", "adam"], help="set the optimizer")
     parser.add_argument("--momentum", type=float, default=0.9, help="set the momentum value for momentum-based optimizers")
     parser.add_argument("--beta2", type=float, default=0.999, help="set beta2 for Adam (and rho for RMSProp if desired)")
@@ -84,7 +85,8 @@ def main():
     print (f"Using layers: {layers}.")
     print (f"Using batch size: {args.batch}")
     print (f"Using epochs: {args.epochs}")
-    print (f"Using early stopping: patience={args.patience}, min_delta={args.min_delta}")
+    if (args.patience < 0):
+        print (f"Using early stopping: patience={args.patience}, min_delta={args.min_delta}")
     print (f"Using learning rate: {args.learning_rate}")
     print (f"Using optimizer: {args.optimizer}")
     print (f"Using momentum: {args.momentum}")
@@ -92,10 +94,10 @@ def main():
     os.makedirs("result/charts", exist_ok=True)
 
     network = Network()
-    network.add(DenseLayer(X_train.shape[1], layers[0], activation=args.activation, w_init=args.w_init, optimizer=args.optimizer, learning_rate=args.learning_rate, momentum=args.momentum, beta2=args.beta2, eps=args.eps))
+    network.add(DenseLayer(X_train.shape[1], layers[0], activation=args.activation, w_init=args.w_init, optimizer=args.optimizer, learning_rate=float(args.learning_rate), momentum=float(args.momentum), beta2=float(args.beta2), eps=float(args.eps)))
     for i in range(1, len(layers)):
-        network.add(DenseLayer(layers[i-1], layers[i], activation=args.activation, w_init=args.w_init, optimizer=args.optimizer, learning_rate=args.learning_rate, momentum=args.momentum, beta2=args.beta2, eps=args.eps))
-    network.add(DenseLayer(layers[-1], 2, activation="none", w_init=args.w_init, optimizer=args.optimizer, learning_rate=args.learning_rate, momentum=args.momentum, beta2=args.beta2, eps=args.eps))
+        network.add(DenseLayer(layers[i-1], layers[i], activation=args.activation, w_init=args.w_init, optimizer=args.optimizer, learning_rate=float(args.learning_rate), momentum=float(args.momentum), beta2=float(args.beta2), eps=float(args.eps)))
+    network.add(DenseLayer(layers[-1], 2, activation="none", w_init=args.w_init, optimizer=args.optimizer, learning_rate=float(args.learning_rate), momentum=float(args.momentum), beta2=float(args.beta2), eps=float(args.eps)))
 
     y_train = to_hot(y_train)
     y_valid = to_hot(y_valid)

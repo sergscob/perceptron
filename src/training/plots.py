@@ -1,48 +1,23 @@
 import matplotlib.pyplot as plt
 
 
-def plot_learning_curves(train_losses, val_losses, train_accs, val_accs, chart_file):
-    epochs = range(1, len(train_losses) + 1)
 
-    # LOSS
+def plot_figure(title, chart_file, line1, label1, line2, label2, line3=None, label3=None):
+    epochs = range(1, len(line1) + 1)
+
     plt.figure()
-    plt.plot(epochs, train_losses, label="Train")
-    plt.plot(epochs, val_losses, label="Val")
-    plt.title("Loss")
+    plt.plot(epochs, line1, label=label1)
+    plt.plot(epochs, line2, label=label2)
+    if line3 is not None and label3 is not None:
+        plt.plot(epochs, line3, label=label3)
+    plt.title(title)
     plt.legend()
     plt.grid(True)
+    plt.xlabel("Epoch")
 
-    plt.savefig("result/charts/" + chart_file+ "_loss.png")
+    plt.savefig("result/charts/" + chart_file)
     plt.close()    
 
-    # ACCURACY
-    plt.figure()
-    plt.plot(epochs, train_accs, label="Train")
-    plt.plot(epochs, val_accs, label="Val")
-    plt.title("Accuracy")
-    plt.legend()
-    plt.grid(True)
-
-    plt.savefig("result/charts/" + chart_file+ "_accuracy.png")
-    plt.close()
-
-
-def plot_classification_metrics(precisions, recalls, f1_scores, chart_file, title="Precision / Recall / F1"):
-    epochs = range(1, len(precisions) + 1)
-
-    plt.figure()
-    plt.plot(epochs, precisions, label="Precision")
-    plt.plot(epochs, recalls, label="Recall")
-    plt.plot(epochs, f1_scores, label="F1-score")
-    plt.title(title)
-    plt.xlabel("Epoch")
-    plt.ylabel("Score")
-    plt.ylim(0.0, 1.0)
-    plt.legend()
-    plt.grid(True)
-
-    plt.savefig("result/charts/" + chart_file + "_classification_metrics.png")
-    plt.close()
 
 
 def plot_layer_stats(stats, chart_file):
